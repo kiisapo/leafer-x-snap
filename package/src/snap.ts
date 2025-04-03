@@ -489,38 +489,49 @@ export class Snap {
    * 获取视口内的元素
    */
   private getElementsInViewport() {
-    // 视口范围对应的内部坐标
-    const zoomLayer = this.app.zoomLayer
+	// 视口范围对应的内部坐标
+	const zoomLayer = this.app.zoomLayer;
 
-    const viewportBounds = [
-      -zoomLayer.x,
-      -zoomLayer.y,
-      -zoomLayer.x + zoomLayer.width / zoomLayer.scaleX,
-      -zoomLayer.y + zoomLayer.height / zoomLayer.scaleY,
-    ]
+	const viewportBounds = [
+		-zoomLayer.x!,
+		-zoomLayer.y!,
+		-zoomLayer.x! + zoomLayer.width! / zoomLayer.scaleX!,
+		-zoomLayer.y! + zoomLayer.height! / zoomLayer.scaleY!
+	];
 
-    const data: IUI[] = this.app.tree?.children?.filter(item => {
-      // 去除 Leafer 元素和 SimulateElement 元素
-      if (item.isLeafer || item.tag === 'SimulateElement') {
-        return false
-      }
+	const result: IUI[] = [];
 
-      const itemBounds = item.getLayoutBounds('box', this.app.tree)
+	const filterElements = (elements?: IUI[]) => {
+		elements?.forEach(item => {
+			// 去除 Leafer 元素和 SimulateElement 元素
+			if (item.isLeafer || item.tag === 'SimulateElement') {
+				return;
+			}
 
-      if (
-        itemBounds.x > viewportBounds[2] ||
-        itemBounds.y > viewportBounds[3] ||
-        itemBounds.x + itemBounds.width < viewportBounds[0] ||
-        itemBounds.y + itemBounds.height < viewportBounds[1]
-      ) {
-        return false
-      }
+			const itemBounds = item.getLayoutBounds('box', this.app.tree);
 
-      return true
-    })
+			if (
+				itemBounds.x > viewportBounds[2] ||
+				itemBounds.y > viewportBounds[3] ||
+				itemBounds.x + itemBounds.width < viewportBounds[0] ||
+				itemBounds.y + itemBounds.height < viewportBounds[1]
+			) {
+				return;
+			}
 
-    return data ?? []
-  }
+			result.push(item);
+
+			// 递归处理子元素
+			if (item.children?.length) {
+				filterElements(item.children as IUI[]);
+			}
+		});
+	};
+
+	filterElements(this.app.tree?.children as IUI[]);
+
+	return result;
+}
 
   /**
    * 隐藏吸附线
